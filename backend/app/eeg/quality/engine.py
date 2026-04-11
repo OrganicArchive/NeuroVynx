@@ -16,7 +16,7 @@ from app.eeg.features import spectral
 # --------------------------------------------------------------------------
 BLINK_SMOOTH_WINDOW = 3
 BLINK_WINDOW_SEC = 0.02
-BLINK_TRANS_THRESH = 100.0            # Slope threshold (µV shift over 20ms)
+BLINK_TRANS_THRESH = 30.0             # Slope threshold (µV shift over 20ms)
 
 NOISE_RATIO_WARN = 0.45               # Ratio (HighFreq/LowFreq)
 NOISE_RATIO_BAD = 0.65
