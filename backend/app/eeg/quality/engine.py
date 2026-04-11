@@ -22,6 +22,11 @@ CLIPPING_P2P_THRESH = 1000.0          # Excessive amplitude typical of amplifier
 HIGH_VARIANCE_THRESH = 1500.0         # General noise threshold for electrode instability
 BLINK_TRANS_THRESH = 100.0            # Sharp voltage shifts characteristic of ocular blinks
 
+# Statistical Floors & Thresholds
+MIN_MAD_FLOOR = 150.0                 # Prevent MAD collapse in very clean simulation data
+BAD_CHANNEL_Z_THRESHOLD = 12.0        # Robust Z-score for bad channels (Possible Instability)
+WARN_CHANNEL_Z_THRESHOLD = 6.0         # Robust Z-score for warning channels (High Variance)
+
 def compute_segment_quality(data_uv: np.ndarray, channels: list, sfreq: float):
     """
     Analyzes a multi-channel EEG segment for technical signal quality.
@@ -52,9 +57,8 @@ def compute_segment_quality(data_uv: np.ndarray, channels: list, sfreq: float):
     median_var = np.median(variances)
     mad = np.median(np.abs(variances - median_var))
     
-    # Epsilon floor prevents division-by-zero errors in perfectly flat or simulated data
-    if mad < epsilon:
-        mad = epsilon
+    # Apply floor to prevent MAD collapse in clean datasets
+    mad = max(mad, MIN_MAD_FLOOR)
     
     for i, ch_name in enumerate(channels):
         var = variances[i]
@@ -80,10 +84,10 @@ def compute_segment_quality(data_uv: np.ndarray, channels: list, sfreq: float):
         # Channels deviating > 6*MAD are flagged as likely high-impedance or loose leads.
         z_robust = abs(var - median_var) / mad
         
-        if z_robust > 6.0:
+        if z_robust > BAD_CHANNEL_Z_THRESHOLD:
             status = "bad"
             ch_warnings.append("Possible Electrode Instability")
-        elif z_robust > 3.0:
+        elif z_robust > WARN_CHANNEL_Z_THRESHOLD:
             status = "warning"
             ch_warnings.append("High Variance Detected")
         
