@@ -14,6 +14,7 @@ Key Concepts:
 """
 
 import numpy as np
+from app.eeg.features import spectral
 
 # Threshold constants for signal interpretation (values in microvolts - uV)
 # --------------------------------------------------------------------------
@@ -23,9 +24,22 @@ HIGH_VARIANCE_THRESH = 1500.0         # General noise threshold for electrode in
 BLINK_TRANS_THRESH = 100.0            # Sharp voltage shifts characteristic of ocular blinks
 
 # Statistical Floors & Thresholds
-MIN_MAD_FLOOR = 150.0                 # Prevent MAD collapse in very clean simulation data
-BAD_CHANNEL_Z_THRESHOLD = 12.0        # Robust Z-score for bad channels (Possible Instability)
-WARN_CHANNEL_Z_THRESHOLD = 6.0         # Robust Z-score for warning channels (High Variance)
+MIN_MAD_FLOOR = 150.0                 # Prevent MAD collapse in simulation data
+BAD_CHANNEL_Z_THRESHOLD = 12.0        # Robust Z-score for bad channels
+WARN_CHANNEL_Z_THRESHOLD = 6.0         # Robust Z-score for warning channels
+
+# Global Noise Penalty Thresholds
+NOISE_RATIO_WARN = 0.35               # Ratio of HighFreq (30-45Hz) to LowFreq (1-30Hz)
+NOISE_RATIO_BAD = 0.60                # Severe HF contamination
+NOISE_WARN_PENALTY = 15
+NOISE_BAD_PENALTY = 35
+
+def moving_average(x: np.ndarray, window: int = 7):
+    """Simple temporal smoothing for noise-robust artifact detection."""
+    if window <= 1:
+        return x
+    kernel = np.ones(window) / window
+    return np.convolve(x, kernel, mode="same")
 
 def compute_segment_quality(data_uv: np.ndarray, channels: list, sfreq: float):
     """
@@ -96,7 +110,10 @@ def compute_segment_quality(data_uv: np.ndarray, channels: list, sfreq: float):
         # We check for a sudden 'step' in voltage using the first derivative (np.diff).
         name_upper = ch_name.upper()
         if "FP1" in name_upper or "FP2" in name_upper:
-            diffs = np.abs(np.diff(data_uv[i]))
+            # NOISE ROBUSTNESS: Smooth signal before transient check
+            smoothed_ch = moving_average(data_uv[i], window=7)
+            diffs = np.abs(np.diff(smoothed_ch))
+            
             # Threshold combination of transient shift (diff) and total amplitude (ptp)
             if np.max(diffs) > (BLINK_TRANS_THRESH / 2.0) and ptp > BLINK_TRANS_THRESH:
                 if status == "good": 
@@ -114,13 +131,30 @@ def compute_segment_quality(data_uv: np.ndarray, channels: list, sfreq: float):
         if ch_warnings:
             warnings.append(f"{ch_name}: {', '.join(ch_warnings)}")
             
-    # --- CONFIDENCE SCORING LOGIC ---
-    # We penalize the overall segment score based on 'bad' or 'warning' channels.
-    # Bad channels = 20% penalty, Warning channels = 5% penalty.
+    # --- 5. ABSOLUTE CONTAMINATION PENALTY (GLOBAL NOISE) ---
+    # Detects broadband technical noise even if uniform across channels.
+    freqs, psd = spectral.compute_psd(data_uv, sfreq)
+    hf_power = spectral.band_power(psd, freqs, (30.0, 45.0))
+    lf_power = spectral.band_power(psd, freqs, (1.0, 30.0))
+    
+    # Calculate Noise Ratio per channel
+    noise_ratios = hf_power / (lf_power + 1e-12)
+    global_noise_ratio = np.median(noise_ratios)
+    
+    global_noise_penalty = 0
+    if global_noise_ratio > NOISE_RATIO_BAD:
+        global_noise_penalty = NOISE_BAD_PENALTY
+        warnings.append(f"Global: Severe High-Frequency Contamination (Ratio: {global_noise_ratio:.2f})")
+    elif global_noise_ratio > NOISE_RATIO_WARN:
+        global_noise_penalty = NOISE_WARN_PENALTY
+        warnings.append(f"Global: High broadband noise detected (Ratio: {global_noise_ratio:.2f})")
+    
+    # --- 6. FINAL SCORING LOGIC ---
     bad_count = sum(1 for v in results.values() if v['status'] == 'bad')
     warn_count = sum(1 for v in results.values() if v['status'] == 'warning')
     
-    score = 100 - (bad_count * 20) - (warn_count * 5)
+    # Total Score = 100 - (Local Abnormality) - (Global Contamination)
+    score = 100 - (bad_count * 20) - (warn_count * 5) - global_noise_penalty
     score = max(0, score)
     
     return {
@@ -130,6 +164,7 @@ def compute_segment_quality(data_uv: np.ndarray, channels: list, sfreq: float):
         "metrics_summary": {
             "bad_channels": bad_count,
             "warning_channels": warn_count,
+            "global_noise_ratio": float(global_noise_ratio),
             "median_variance": float(median_var),
             "mad": float(mad)
         }
