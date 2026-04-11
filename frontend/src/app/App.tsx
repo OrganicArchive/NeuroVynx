@@ -10,16 +10,22 @@ function App() {
   // Basic routing state
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null)
 
-  // Test FastAPI connection on load
+  // Test FastAPI connection on load with polling fallback
   useEffect(() => {
-    fetch('http://localhost:8000/health')
-      .then(res => res.json())
-      .then(data => {
-        setApiStatus(`Healthy: ${data.project}`)
-      })
-      .catch(_err => {
-        setApiStatus('Disconnected')
-      })
+    const checkHealth = () => {
+      fetch('http://localhost:8000/health')
+        .then(res => res.json())
+        .then(data => {
+          setApiStatus(`Healthy: ${data.project}`)
+        })
+        .catch(_err => {
+          setApiStatus('Disconnected')
+          // Retry in 3 seconds if disconnected
+          setTimeout(checkHealth, 3000)
+        })
+    }
+    
+    checkHealth()
   }, [])
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
