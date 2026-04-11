@@ -16,7 +16,7 @@ FLATLINE_VARIANCE_THRESH = 0.05
 CLIPPING_P2P_THRESH = 1000.0
 HIGH_VARIANCE_THRESH = 1500.0         # Absolute "Bad" variance threshold
 WARN_VARIANCE_THRESH = 800.0          # Absolute "Warning" variance threshold
-BLINK_TRANS_THRESH = 100.0            # Total shift over 20ms window
+BLINK_TRANS_THRESH = 30.0             # Sensitive to rolling biological blinks (shift over 20ms)
 
 # Statistical Floors & Thresholds
 MIN_MAD_FLOOR = 150.0
