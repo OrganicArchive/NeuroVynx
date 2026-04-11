@@ -1,0 +1,28 @@
+# Node/Frontend
+node_modules/
+dist/
+dist-electron/
+.npm
+build/
+
+# Python/Backend
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+.env
+
+# Data & SQLite
+*.db
+*.sqlite3
+data/
+datasets/
+uploads/
+
+# IDEs and OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
