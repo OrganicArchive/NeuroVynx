@@ -32,7 +32,8 @@ def analyze_window(
     include_features: bool = True,
     include_baseline: bool = True,
     user_id: str = "default_user",
-    baseline_type: str = "resting"
+    baseline_type: str = "resting",
+    context: str = "awake"
 ):
     """
     Executes a high-resolution analysis of a specific EEG time window.
@@ -107,14 +108,29 @@ def analyze_window(
         
         # Signal Quality: Checks for artifacts and channel drops
         if include_quality:
-            result["quality"] = compute_segment_quality(data_uv, channels, sfreq)
+            result["quality"] = compute_segment_quality(data_uv, channels, sfreq, context=context)
             
-        # Feature Extraction: Computes Spectral Power (PSD) using Welch method
+            # --- DIAGNOSTIC ISOLATION CHECK ---
+            # Verified channel separation and penalty scaling
+            if "debug_isolation_check" in result["quality"]:
+                debug = result["quality"]["debug_isolation_check"]
+                print(f"\n[DIAGNOSTIC] Channel Isolation Check - Window {start}s")
+                print(f"  - EEG Channels ({len(debug['eeg_channels_used'])}): {debug['eeg_channels_used']}")
+                print(f"  - EOG Channels ({len(debug['eog_channels_used'])}): {debug['eog_channels_used']}")
+                print(f"  - Aux Sensors Excluded: {debug['aux_channels_excluded']}")
+                print(f"  - EEG Score (Raw): {debug['eeg_score_raw']}%")
+                print(f"  - EEG Total Penalty: -{debug['eeg_penalty_total']:.1f} pts (Scaled x0.8)")
+                print(f"  - Final EEG Quality: {debug['eeg_score_final']}%")
+                print(f"  - Soft Protection Active: {debug['soft_protection_active']}")
+                print("-" * 50)
+            
+        # Features: Computes absolute and relative band power using Welch's method.
         if include_features:
             features = extract_features(data_uv, sfreq, channels)
             result["features"] = features
             
-            # Baseline Comparison: Direct mathematical comparison to resting profiles
+            # Baseline Comparison: Direct comparison to a stored resting/calibration record.
+            # This allows the UI to highlight deviations (e.g., '140% of baseline delta').
             if include_baseline:
                 baseline_obj = load_baseline(db, user_id, baseline_type)
                 if baseline_obj:

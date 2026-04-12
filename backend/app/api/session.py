@@ -92,6 +92,7 @@ def get_session_quality(
     session_id: str, 
     start: float = Query(0.0, description="Start time in seconds"),
     duration: float = Query(10.0, description="Duration in seconds"),
+    context: str = Query("awake", description="Clinical context: 'awake' or 'sleep'"),
     db: DBSession = Depends(get_db)
 ):
     session = db.query(Session).filter(Session.id == session_id).first()
@@ -117,7 +118,7 @@ def get_session_quality(
         data_uv = raw_slice.get_data() * 1e6
         
         # Run quality analysis
-        analysis = compute_segment_quality(data_uv, raw_slice.ch_names, sfreq)
+        analysis = compute_segment_quality(data_uv, raw_slice.ch_names, sfreq, context=context)
         
         return analysis
         
@@ -185,8 +186,14 @@ def get_session_analysis(
     duration: float = Query(10.0),
     apply_notch: bool = Query(False),
     apply_bandpass: bool = Query(False),
+    context: str = Query("awake"),
     db: DBSession = Depends(get_db)
 ):
+    """
+    Primary Unified Analysis Endpoint.
+    Returns synchronized Quality metrics, Spectral Features, and Baseline comparisons 
+    for a specific 10-second slice. Supports dynamic clinical context (Awake/Sleep).
+    """
     try:
         return analyze_window(
             db=db,
@@ -197,7 +204,8 @@ def get_session_analysis(
             apply_bandpass=apply_bandpass,
             include_quality=True,
             include_features=True,
-            include_baseline=True
+            include_baseline=True,
+            context=context
         )
     except HTTPException:
         raise

@@ -25,6 +25,7 @@ const SessionViewer: React.FC<SessionViewerProps> = ({ sessionId, onBack }) => {
   const [isSavingBaseline, setIsSavingBaseline] = useState<boolean>(false)
   const [isSavingArtifact, setIsSavingArtifact] = useState<boolean>(false)
   const [selectedArtifactLabel, setSelectedArtifactLabel] = useState<string>("blink")
+  const [recordingContext, setRecordingContext] = useState<string>("awake")
 
   const ARTIFACT_LABELS = [
     { value: 'blink', label: 'Blink / Ocular' },
@@ -129,7 +130,7 @@ const SessionViewer: React.FC<SessionViewerProps> = ({ sessionId, onBack }) => {
     const bandpass = overrideBandpass !== undefined ? overrideBandpass : applyBandpass
 
     try {
-      const res = await fetch(`http://localhost:8000/api/v1/sessions/${sessionId}/analysis?start=${start}&duration=${duration}&apply_notch=${notch}&apply_bandpass=${bandpass}`)
+      const res = await fetch(`http://localhost:8000/api/v1/sessions/${sessionId}/analysis?start=${start}&duration=${duration}&apply_notch=${notch}&apply_bandpass=${bandpass}&context=${recordingContext}`)
       
       if (!res.ok) {
         const errData = await res.json()
@@ -149,7 +150,16 @@ const SessionViewer: React.FC<SessionViewerProps> = ({ sessionId, onBack }) => {
   useEffect(() => {
     fetchSegment(0)
     fetchTimeline()
-  }, [sessionId])
+    
+    // Load session context if persisted
+    fetch(`http://localhost:8000/api/v1/sessions/${sessionId}`)
+      .then(res => res.json())
+      .then(data => {
+        if (data.recording_context) {
+          setRecordingContext(data.recording_context)
+        }
+      })
+  }, [sessionId, recordingContext])
 
   const handleToggleNotch = () => {
     const nextVal = !applyNotch
@@ -200,6 +210,24 @@ const SessionViewer: React.FC<SessionViewerProps> = ({ sessionId, onBack }) => {
               <input type="checkbox" className="rounded bg-input border-border" checked={applyBandpass} onChange={handleToggleBandpass} />
               <span>Bandpass (1-45Hz)</span>
             </label>
+          </div>
+          
+          <div className="h-6 w-px bg-border mx-2"></div>
+
+          {/* Recording Context Picker */}
+          <div className="flex items-center gap-3 bg-secondary/30 px-3 py-1.5 rounded-md border border-border/50">
+            <span className="text-[10px] uppercase font-bold text-muted-foreground tracking-wider">Context</span>
+            <select 
+              value={recordingContext} 
+              onChange={(e) => {
+                setRecordingContext(e.target.value)
+                fetchSegment(startTime, applyNotch, applyBandpass)
+              }}
+              className="bg-transparent text-xs font-semibold focus:outline-none cursor-pointer"
+            >
+              <option value="awake" className="bg-card">Awake EEG</option>
+              <option value="sleep" className="bg-card">Sleep EEG</option>
+            </select>
           </div>
           
           <div className="h-6 w-px bg-border mx-2"></div>
@@ -411,54 +439,100 @@ const SessionViewer: React.FC<SessionViewerProps> = ({ sessionId, onBack }) => {
                 )}
               </div>
             </div>
-
-            {/* Quality Summary Panel (Moved below features) */}
-            <div className="flex-1 bg-card border border-border rounded flex flex-col overflow-hidden max-h-[300px]">
+            {/* Quality Summary Panel (3-Metric Dashboard) */}
+            <div className="flex-1 bg-card border border-border rounded flex flex-col overflow-hidden max-h-[350px]">
               <div className="px-4 py-3 border-b border-border bg-muted/30 flex items-center justify-between shrink-0">
-                <span className="font-semibold text-sm">Quality Engine</span>
-                {q && (
-                  <span className={`text-xs px-2 py-1 rounded font-bold shadow-sm ${
-                    q.overall_quality_score > 80 ? 'bg-green-500/20 text-green-500' :
-                    q.overall_quality_score > 50 ? 'bg-yellow-500/20 text-yellow-500' :
-                    'bg-red-500/20 text-red-500 border border-red-500/50'
-                  }`}>
-                    {q.overall_quality_score}%
-                  </span>
-                )}
+                <span className="font-semibold text-sm">Quality Engine ({recordingContext.charAt(0).toUpperCase() + recordingContext.slice(1)} Profile)</span>
               </div>
               
               <div className="flex-1 overflow-y-auto px-4">
                 {!q ? (
                   <div className="text-sm text-muted-foreground p-4 animate-pulse">Running quality scan...</div>
                 ) : (
-                  <div className="space-y-3 pt-2">
+                  <div className="space-y-4 pt-4">
+                    {/* 
+                      Primary Brain Quality Metric (Isolated)
+                      This score represents strictly EEG-only signal integrity, 
+                      providing a noise-isolated clinical view.
+                    */}
+                    <div className="p-3 bg-muted/20 border border-border/40 rounded-lg">
+                      <div className="flex justify-between items-center mb-1.5">
+                        <span className="text-[10px] uppercase font-bold text-primary tracking-widest">Primary EEG Quality</span>
+                        <span className={`text-sm font-mono font-bold ${q.eeg_quality_score > 80 ? 'text-green-500' : 'text-yellow-500'}`}>{q.eeg_quality_score}%</span>
+                      </div>
+                      <div className="w-full h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full transition-all duration-1000 ${q.eeg_quality_score > 80 ? 'bg-green-500' : 'bg-yellow-500'}`}
+                          style={{ width: `${q.eeg_quality_score}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                      <div className="grid grid-cols-2 gap-2">
+                         <div className="p-2 border border-border/50 rounded bg-muted/10">
+                            <span className="text-[9px] uppercase font-bold text-muted-foreground mb-1 block">Completeness</span>
+                            <span className="text-sm font-mono font-bold text-foreground/90">{q.recording_completeness}%</span>
+                         </div>
+                         <div className="p-2 border border-border/50 rounded bg-muted/10">
+                            <span className="text-[9px] uppercase font-bold text-muted-foreground mb-1 block text-right">Global Score</span>
+                            <span className="text-sm font-mono font-bold text-foreground/90 block text-right">{q.global_recording_score}%</span>
+                         </div>
+                      </div>
+
                     {q.warnings.length > 0 && (
-                      <div className="mb-4">
-                        <div className="text-xs font-semibold text-destructive flex items-center gap-1 mb-2">
-                          <ShieldAlert className="w-3 h-3" /> Segment Warnings
+                      <div className="mt-4">
+                        <div className="text-[10px] font-bold text-destructive flex items-center gap-1 mb-2 uppercase tracking-widest">
+                          <ShieldAlert className="w-3 h-3" /> Clinical Signal Alerts
                         </div>
-                        <div className="text-xs space-y-1">
+                        <div className="text-[10px] space-y-1">
                           {q.warnings.map((warn: string, i: number) => (
-                            <div key={i} className="bg-destructive/10 p-1.5 rounded text-destructive leading-tight border border-destructive/20">{warn}</div>
+                            <div key={i} className="bg-destructive/5 p-1.5 rounded text-destructive/80 leading-tight border border-destructive/10">{warn}</div>
                           ))}
                         </div>
                       </div>
                     )}
 
-                    <div className="text-xs font-semibold text-muted-foreground mb-2 sticky top-0 bg-card py-3 z-20 border-b border-border/10 -mx-4 px-4">Channel Status</div>
-                    {Object.entries(q.per_channel_status).map(([ch, info]: [string, any]) => (
-                      <div key={ch} className="flex items-center justify-between py-1 border-b border-border/30 last:border-0">
-                        <span className="text-sm font-mono">{ch}</span>
-                        {info.status === 'good' && <CheckCircle className="w-4 h-4 text-green-500" />}
-                        {info.status === 'warning' && <AlertTriangle className="w-4 h-4 text-yellow-500" />}
-                        {info.status === 'bad' && <ShieldAlert className="w-4 h-4 text-destructive" />}
+                    {q.recording_warnings && q.recording_warnings.length > 0 && (
+                      <div className="mt-3">
+                        <div className="text-[10px] font-bold text-muted-foreground/80 flex items-center gap-1 mb-2 uppercase tracking-widest">
+                          <Activity className="w-3 h-3" /> Setup & Sensor Alerts
+                        </div>
+                        <div className="text-[10px] space-y-1">
+                          {q.recording_warnings.map((warn: string, i: number) => (
+                            <div key={i} className="bg-muted/50 p-1.5 rounded text-muted-foreground italic leading-tight border border-border/50">{warn}</div>
+                          ))}
+                        </div>
                       </div>
-                    ))}
+                    )}
+
+                    <div className="text-[10px] font-bold text-muted-foreground mb-2 sticky top-0 bg-card py-3 z-20 border-b border-border/10 -mx-4 px-4 uppercase tracking-widest">Channel Status Inventory</div>
+                    <div className="space-y-1 pb-4">
+                      {Object.entries(q.per_channel_status).map(([ch, info]: [string, any]) => (
+                        <div key={ch} className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-0">
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono font-medium">{ch}</span>
+                            <span className={`text-[8px] px-1 rounded border leading-none py-0.5 border-muted-foreground/30 text-muted-foreground/70`}>
+                              {info.type}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                             {info.status === 'good' && <CheckCircle className="w-3 h-3 text-green-500" />}
+                             {info.status === 'warning' && <AlertTriangle className="w-3 h-3 text-yellow-500" />}
+                             {info.status === 'bad' && <ShieldAlert className="w-3 h-3 text-destructive" />}
+                             {info.status === 'inactive' && <Activity className="w-3 h-3 text-muted-foreground/40" />}
+                             <span className={`text-[10px] font-bold min-w-[60px] text-right ${
+                               info.status === 'good' ? 'text-green-500/70' :
+                               info.status === 'warning' ? 'text-yellow-500/70' :
+                               info.status === 'bad' ? 'text-destructive/70' : 'text-muted-foreground/40'
+                             }`}>{info.status.toUpperCase()}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
             </div>
-
           </div>
         </div>
 

@@ -60,6 +60,20 @@ const EegCanvasViewer: React.FC<EegCanvasViewerProps> = ({
     const numChannels = data.length
     const rowHeight = height / numChannels
     const numSamples = data[0].length
+    const durationSeconds = numSamples / sampleRate
+
+    // Draw 1-second vertical grid lines (Isolated background layer)
+    ctx.save()
+    ctx.beginPath()
+    ctx.strokeStyle = '#111114' // Exceptionally muted gray
+    ctx.lineWidth = 1
+    for (let s = 1; s < Math.floor(durationSeconds); s++) {
+      const x = (s / durationSeconds) * width
+      ctx.moveTo(x, 0)
+      ctx.lineTo(x, height)
+    }
+    ctx.stroke()
+    ctx.restore()
 
     // Fine-tuned trace stroke for high visibility
     ctx.lineWidth = 1.5
@@ -69,61 +83,69 @@ const EegCanvasViewer: React.FC<EegCanvasViewerProps> = ({
     const defaultTraceColor = '#10b981' // Green (Clean signal)
     const warningTraceColor = '#eab308' // Yellow (Transient artifacts)
     const badTraceColor = '#ef4444'     // Red (Lead off / clipping)
+    const inactiveTraceColor = '#27272a' // Muted (Disconnected/Flat)
     const labelColor = '#a1a1aa'        // Muted labels
 
     // --- MAIN RENDERING LOOP ---
-    // We iterate over each channel and compute its vertical offset.
     for (let c = 0; c < numChannels; c++) {
       const channelData = data[c]
-      const yOffset = c * rowHeight + (rowHeight / 2) // baseline Y coordinate
+      const yOffset = c * rowHeight + (rowHeight / 2)
       const chName = channels[c]
       
       const qStatus = qualityData ? qualityData[chName]?.status : 'good'
+      const chType = qualityData ? (qualityData[chName] as any)?.type : 'EEG'
       
-      // Draw background alerts if quality is compromised (Visual alerting)
-      if (qStatus === 'bad') {
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.1)' // faint red zone
-        ctx.fillRect(0, c * rowHeight, width, rowHeight)
-      } else if (qStatus === 'warning') {
-        ctx.fillStyle = 'rgba(234, 179, 8, 0.05)' // faint yellow zone
-        ctx.fillRect(0, c * rowHeight, width, rowHeight)
+      // Visual Severity Mapping (Context-Aware Backgrounds)
+      // We implement a 'clinical hierarchy' for visual alerts:
+      // 1. Inactive sensors (Gray) - Setup-level awareness
+      // 2. Primary EEG (Red) - Clinical-level urgency (e.g. lead-off)
+      // 3. EOG (Amber) - Physiological-level awareness (noise)
+      if (chType !== 'MARKER') {
+        if (qStatus === 'inactive') {
+          ctx.fillStyle = 'rgba(39, 39, 42, 0.1)' // Muted Gray
+          ctx.fillRect(0, c * rowHeight, width, rowHeight)
+        } else if (chType === 'EEG' && qStatus === 'bad') {
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.18)' // Strong Red Alert
+          ctx.fillRect(0, c * rowHeight, width, rowHeight)
+        } else if (chType === 'EOG' && (qStatus === 'bad' || qStatus === 'warning')) {
+          ctx.fillStyle = 'rgba(255, 165, 0, 0.12)' // Amber Warning (Contextual Noise)
+          ctx.fillRect(0, c * rowHeight, width, rowHeight)
+        } else if (qStatus === 'warning' || qStatus === 'bad') {
+          // Standard warning fallback with lower visual weight
+          ctx.fillStyle = qStatus === 'bad' ? 'rgba(239, 68, 68, 0.08)' : 'rgba(234, 179, 8, 0.05)'
+          ctx.fillRect(0, c * rowHeight, width, rowHeight)
+        }
       }
 
-      // Draw faint baseline grid line
+      // Draw faint baseline horizontal guide
       ctx.beginPath()
-      ctx.strokeStyle = '#27272a' 
+      ctx.strokeStyle = '#18181b' 
       ctx.moveTo(0, yOffset)
       ctx.lineTo(width, yOffset)
       ctx.stroke()
       
       // Render electrode label
       ctx.fillStyle = labelColor
-      ctx.font = '12px Inter, sans-serif'
-      ctx.fillText(chName, 10, yOffset - 10)
+      ctx.font = '11px Inter, sans-serif'
+      ctx.fillText(chName, 10, yOffset - 12)
 
       // --- SIGNAL TRACE DRAWING ---
       ctx.beginPath()
-      if (qStatus === 'bad') ctx.strokeStyle = badTraceColor
+      if (qStatus === 'inactive') ctx.strokeStyle = inactiveTraceColor
+      else if (qStatus === 'bad') ctx.strokeStyle = badTraceColor
       else if (qStatus === 'warning') ctx.strokeStyle = warningTraceColor
       else ctx.strokeStyle = defaultTraceColor
       
       for (let i = 0; i < numSamples; i++) {
-        // Horizontal mapping: time -> pixels
         const x = (i / numSamples) * width
-        
-        // Vertical mapping: voltage -> pixels
-        // Subtraction (yOffset - ...) is necessary because Canvas Y=0 is the TOP of the frame.
         const y = yOffset - (channelData[i] * verticalScaleFactor)
         
-        if (i === 0) {
-          ctx.moveTo(x, y)
-        } else {
-          ctx.lineTo(x, y)
-        }
+        if (i === 0) ctx.moveTo(x, y)
+        else ctx.lineTo(x, y)
       }
       ctx.stroke()
     }
-  }, [data, channels, verticalScaleFactor, qualityData])
+  }, [data, channels, verticalScaleFactor, qualityData, sampleRate])
 
   return (
     <div className="w-full h-full relative bg-background border border-border rounded-md overflow-hidden">
