@@ -17,6 +17,10 @@ from sqlalchemy.orm import Session as DBSession
 
 from app.models.session import Session
 from app.eeg.quality.engine import compute_segment_quality
+from app.eeg.qeeg.engine import compute_qeeg_layer
+from app.eeg.qeeg.temporal import compute_temporal_qeeg
+from app.eeg.qeeg.topography import compute_band_topographies, compute_normative_topography
+from app.eeg.qeeg.normative import compute_normative_comparison
 from app.eeg.features.engine import extract_features
 from app.eeg.baselines.repository import load_baseline
 from app.eeg.baselines.engine import compare_to_baseline
@@ -33,7 +37,9 @@ def analyze_window(
     include_baseline: bool = True,
     user_id: str = "default_user",
     baseline_type: str = "resting",
-    context: str = "awake"
+    context: str = "awake",
+    age: Optional[int] = None,
+    age_band: Optional[str] = None
 ):
     """
     Executes a high-resolution analysis of a specific EEG time window.
@@ -59,40 +65,48 @@ def analyze_window(
         raise HTTPException(status_code=404, detail="Original EDF file not found on disk")
 
     try:
-        # --- 1. LAZY LOADING ---
+        # --- 0. FILE INITIALIZATION ---
         # We use preload=False to avoid loading the entire file into RAM.
-        # This allows NeuroVynx to handle multi-gigabyte files with constant memory usage.
         raw = mne.io.read_raw_edf(db_session.file_path, preload=False, verbose=False)
         
         # CLEANUP: Strip trailing dots often found in standardized EDF exports
         raw.rename_channels(lambda ch: ch.strip('.'))
         
         sfreq = raw.info['sfreq']
+        max_time = raw.times[-1]
+
+        # --- 1. CONTEXT LOADING ---
+        # We load the current window PLUS 120s of preceding context for temporal analysis
+        context_duration = 120.0
+        total_start = max(0, start - context_duration)
+        total_end = start + duration
         
-        # Calculate samples carefully based on sfreq
-        start_samp = int(start * sfreq)
-        stop_samp = int((start + duration) * sfreq)
-        max_samp = int(raw.times[-1] * sfreq)
+        # Safety bounds
+        total_start = max(0, min(total_start, max_time))
+        total_end = max(0, min(total_end, max_time))
         
-        # Safety bounds to prevent MNE array indexing errors
-        start_samp = max(0, min(start_samp, max_samp))
-        stop_samp = max(0, min(stop_samp, max_samp))
+        # Load the combined slice
+        raw_combined = raw.copy().crop(tmin=total_start, tmax=total_end).load_data()
         
-        # Load only the requested slice into memory
-        raw_slice = raw.copy().crop(tmin=start_samp/sfreq, tmax=stop_samp/sfreq).load_data()
-        
-        # --- 2. ONLINE DSP FILTERS ---
-        # Notch filter removes specific frequency interference (typically 50/60Hz AC noise).
+        # Apply DSP to the combined slice (improves filter stability)
         if apply_notch:
-            raw_slice.notch_filter(freqs=50.0, verbose=False)
-            
-        # Bandpass filter (1-45Hz) isolates standard neurological frequency bands.
+            raw_combined.notch_filter(freqs=50.0, verbose=False)
         if apply_bandpass:
-            raw_slice.filter(l_freq=1.0, h_freq=45.0, verbose=False)
+            raw_combined.filter(l_freq=1.0, h_freq=45.0, verbose=False)
             
-        # Convert to microvolts (uV) for human-readable consistency in the UI
-        data_uv = raw_slice.get_data() * 1e6
-        channels = raw_slice.ch_names
+        # Get data and convert to uV
+        full_data_uv = raw_combined.get_data() * 1e6
+        channels = raw_combined.ch_names
+        
+        # Identify current window indices within the combined slice
+        # The current window starts at 'start' which is 'start - total_start' relative to slice
+        current_rel_start = start - total_start
+        curr_start_idx = int(current_rel_start * sfreq)
+        curr_stop_idx = int((current_rel_start + duration) * sfreq)
+        
+        # Squeeze in edges if indexing jitter occurs
+        curr_stop_idx = min(curr_stop_idx, full_data_uv.shape[1])
+        data_uv = full_data_uv[:, curr_start_idx:curr_stop_idx]
         
         result = {
             "window": {
@@ -100,7 +114,7 @@ def analyze_window(
                 "duration": duration,
                 "sample_rate": sfreq,
                 "channels": channels,
-                "data": data_uv.tolist() # include for trace rendering
+                "data": data_uv.tolist() 
             }
         }
         
@@ -110,20 +124,127 @@ def analyze_window(
         if include_quality:
             result["quality"] = compute_segment_quality(data_uv, channels, sfreq, context=context)
             
-            # --- DIAGNOSTIC ISOLATION CHECK ---
-            # Verified channel separation and penalty scaling
-            if "debug_isolation_check" in result["quality"]:
-                debug = result["quality"]["debug_isolation_check"]
-                print(f"\n[DIAGNOSTIC] Channel Isolation Check - Window {start}s")
-                print(f"  - EEG Channels ({len(debug['eeg_channels_used'])}): {debug['eeg_channels_used']}")
-                print(f"  - EOG Channels ({len(debug['eog_channels_used'])}): {debug['eog_channels_used']}")
-                print(f"  - Aux Sensors Excluded: {debug['aux_channels_excluded']}")
-                print(f"  - EEG Score (Raw): {debug['eeg_score_raw']}%")
-                print(f"  - EEG Total Penalty: -{debug['eeg_penalty_total']:.1f} pts (Scaled x0.8)")
-                print(f"  - Final EEG Quality: {debug['eeg_score_final']}%")
-                print(f"  - Soft Protection Active: {debug['soft_protection_active']}")
+            # --- CONFIDENCE & DIAGNOSTIC LOGGING ---
+            q = result["quality"]
+            if "confidence_details" in q:
+                conf = q["confidence_details"]
+                print(f"\n[DIAGNOSTIC] Quality & Confidence Check - Window {start}s")
+                print(f"  - EEG Quality: {q['eeg_quality_score']}%")
+                print(f"  - Confidence: {q['confidence_score']}% ({q['confidence_level'].upper()})")
+                print(f"  - Components: Cov={conf['components']['coverage']} Agr={conf['components']['agreement']} Cons={conf['components']['consistency']} Ctx={conf['components']['context']} Prot={conf['components']['protection']}")
+                print(f"  - Reasoning: {', '.join(conf['reasons'])}")
+                if conf['coverage_capped']:
+                    print(f"  - [NOTICE] Low-coverage cap applied (Active EEG: {conf['active_eeg_channels']}/{conf['expected_eeg_channels']})")
                 print("-" * 50)
             
+            # --- 6. qEEG LAYER ---
+            # Quantitative EEG metrics gated by Quality/Confidence
+            result["qeeg"] = compute_qeeg_layer(
+                data_uv=data_uv,
+                channels=channels,
+                sfreq=sfreq,
+                quality_info=result["quality"],
+                confidence_info=result["quality"].get("confidence_details", {})
+            )
+            
+            # --- 7. TEMPORAL DYNAMICS ---
+            # Retrospectively analyze the last 12 windows for trends
+            history_results = []
+            step = 10.0
+            
+            # We iterate backwards from start-10s
+            t_back = start - step
+            while t_back >= total_start and (start - t_back) <= 120.0:
+                rel_t = t_back - total_start
+                h_start_idx = int(rel_t * sfreq)
+                h_stop_idx = int((rel_t + step) * sfreq)
+                h_stop_idx = min(h_stop_idx, full_data_uv.shape[1])
+                
+                h_data = full_data_uv[:, h_start_idx:h_stop_idx]
+                
+                # Analyze this history window
+                h_qual = compute_segment_quality(h_data, channels, sfreq, context=context)
+                
+                # Check inclusion thresholds for temporal analysis:
+                # EEG Quality >= 50 and Confidence >= 50
+                if h_qual.get("eeg_quality_score", 0) >= 50 and h_qual.get("confidence_score", 0) >= 50:
+                    h_qeeg = compute_qeeg_layer(
+                        data_uv=h_data,
+                        channels=channels,
+                        sfreq=sfreq,
+                        quality_info=h_qual,
+                        confidence_info=h_qual.get("confidence_details", {})
+                    )
+                    # Only include if actually available
+                    if h_qeeg["is_available"]:
+                        history_results.insert(0, h_qeeg)
+                
+                t_back -= step
+                
+            result["temporal_qeeg"] = compute_temporal_qeeg(
+                history=history_results,
+                current_qeeg=result["qeeg"],
+                window_step=step
+            )
+
+            # --- 8. SPATIAL TOPOGRAPHY ---
+            # Generate 2D scalp maps from eligible EEG channels
+            result["topography"] = compute_band_topographies(
+                channel_metrics=result["qeeg"].get("channel_metrics", []),
+                qeeg_trust_level=result["qeeg"].get("trust_level", "unavailable")
+            )
+
+            # --- 9. NORMATIVE COMPARISON (Phase 3A) ---
+            # Compare metrics against references (Trust-gated internally)
+            result["normative"] = compute_normative_comparison(
+                qeeg_results=result["qeeg"],
+                age=age,
+                age_band=age_band,
+                context=context
+            )
+
+            # --- 10. NORMATIVE TOPOGRAPHY (Phase 3B) ---
+            # Generate deviation scalp maps (Symmetric z-score interpolation)
+            result["normative_topography"] = compute_normative_topography(
+                normative_layer=result["normative"],
+                qeeg_trust_level=result["qeeg"].get("trust_level", "unavailable")
+            )
+
+            # [DIAGNOSTIC] qEEG Log
+            qeeg = result["qeeg"]
+            if qeeg["is_available"]:
+                summary = qeeg["summary"]
+                print(f"[DIAGNOSTIC] qEEG Summary - Window {start}s")
+                print(f"  - Trust Level: {qeeg['trust_level'].upper()}")
+                print(f"  - Eligible EEG: {qeeg['eligible_eeg_channels']}/{len(channels)}")
+                print(f"  - Excluded EEG: {qeeg['excluded_eeg_channels']}")
+                print(f"  - Dominant Band: {summary['dominant_global_band'].upper()}")
+                print(f"  - Asymmetry Pairs: {len(qeeg['asymmetry_metrics'])}")
+                
+                # [DIAGNOSTIC] Temporal Log
+                t_qeeg = result.get("temporal_qeeg", {})
+                if t_qeeg.get("is_available"):
+                    print(f"  - Temporal Stability: {t_qeeg['summary']['overall_stability'].upper()}")
+                    print(f"  - Pattern Hint: {t_qeeg['summary']['dominant_temporal_pattern']}")
+                
+                # [DIAGNOSTIC] Topography Log
+                topo = result.get("topography", {})
+                if topo.get("is_available"):
+                    print(f"  - Topography Coverage: {topo['eligible_channel_count']} channels ({topo['distinct_region_count']} regions)")
+                    print(f"  - Strongest Region: {topo['summary']['strongest_region'].upper()}")
+                else:
+                    print(f"  - Topography Unavailable: {topo.get('reason', 'N/A')}")
+                
+                # [DIAGNOSTIC] Normative Log
+                norm = result.get("normative", {})
+                if norm.get("normative_allowed"):
+                    print(f"  - Normative Results: {norm['normative_status'].upper()}")
+                    print(f"  - Pattern: {norm['summary']['pattern_hint']}")
+                else:
+                    print(f"  - Normative Withheld: {norm.get('normative_status', 'N/A')}")
+                
+                print("-" * 50)
+
         # Features: Computes absolute and relative band power using Welch's method.
         if include_features:
             features = extract_features(data_uv, sfreq, channels)

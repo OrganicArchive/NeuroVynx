@@ -11,6 +11,7 @@ Features:
 - Noise-gated blink detection
 - Channel Classification (EEG vs Aux)
 - Sleep/Awake Context Switching
+- Multi-Component Confidence Scoring (Coverage, Agreement, Consistency, Context, Protection)
 """
 
 import numpy as np
@@ -96,6 +97,165 @@ def compute_smoothness(data: np.ndarray):
     m1 = np.mean(d1) + 1e-12
     m2 = np.mean(d2)
     return 1.0 / (1.0 + (m2 / m1))
+
+def compute_confidence_score(
+    results: dict,
+    eeg_channels: list,
+    eog_channels: list,
+    aux_channels: list,
+    eeg_quality_score: float,
+    completeness: float,
+    soft_protection_active: bool,
+    metrics_summary: dict
+):
+    """
+    Computes a 0-100% confidence score based on signal reliability.
+    
+    Components:
+    A. Coverage (30%): EEG visibility
+    B. Agreement (25%): Signal consistency across brain channels
+    C. Consistency (20%): Morphological vs Spectral agreement
+    D. Context (15%): Artifact/Auxiliary environment
+    E. Protection (10%): Penalty for rescue logic dependency
+    """
+    
+    # 1. Coverage Component (30%)
+    # expected_eeg_channels should ideally be from Montage, here we use identified EEG channels
+    expected_eeg = len(eeg_channels)
+    active_eeg = sum(1 for ch in eeg_channels if results[ch]["active"])
+    
+    coverage_ratio = (active_eeg / expected_eeg) if expected_eeg > 0 else 0
+    coverage_score = coverage_ratio * 100
+    
+    # 2. Agreement Component (25%) - EEG ONLY
+    agreement_score = 100
+    active_eeg_info = [results[ch] for ch in eeg_channels if results[ch]["active"]]
+    
+    if len(active_eeg_info) >= 2:
+        # A. Score Agreement
+        eeg_ch_scores = []
+        for info in active_eeg_info:
+            # Reconstruct per-channel score logic for agreement check
+            raw_p = (100 - (0 if info['status'] == 'bad' else 75 if info['status'] == 'warning' else 100)) * 0.8
+            if not info['is_fatal'] and info['status'] == 'warning': raw_p *= 0.6
+            eeg_ch_scores.append(100 - raw_p)
+            
+        score_std = np.std(eeg_ch_scores)
+        # Penalty grows if std > 15
+        agreement_penalty = max(0, (score_std - 15) * 2.0)
+        
+        # B. Spectral Agreement (Noise Ratio check)
+        noise_ratios = [info['noise_ratio'] for info in active_eeg_info]
+        noise_std = np.std(noise_ratios)
+        agreement_penalty += max(0, (noise_std - 0.2) * 100)
+        
+        agreement_score = max(0, 100 - agreement_penalty)
+    elif len(active_eeg_info) == 1:
+        agreement_score = 70 # Single channel can't have agreement
+    else:
+        agreement_score = 0
+
+    # 3. Consistency Component (20%) - MORPH vs SPECTRAL
+    consistency_score = 100
+    contradiction_penalty = 0
+    for ch in eeg_channels:
+        info = results[ch]
+        if not info["active"]: continue
+        
+        # Contradiction: Spectral says clean (<0.4) but morphology says bad (is_fatal)
+        if info["noise_ratio"] < 0.4 and info["is_fatal"]:
+            contradiction_penalty += 15
+        # Contradiction: Spectral says very noisy (>0.7) but morphology says good
+        if info["noise_ratio"] > 0.7 and info["status"] == "good":
+            contradiction_penalty += 15
+            
+    consistency_score = max(50, 100 - contradiction_penalty)
+
+    # 4. Context Component (15%)
+    # completeness (0.5) + EOG burden (0.5)
+    eog_active = [ch for ch in eog_channels if results[ch]["active"]]
+    eog_burden = 0
+    for ch in eog_active:
+        if results[ch]["status"] == "bad":
+            eog_burden += 40
+        elif results[ch]["status"] == "warning":
+            eog_burden += 20
+    
+    eog_penalty = min(95, eog_burden)
+    context_score = (0.5 * completeness) + (0.5 * (100 - eog_penalty))
+    
+    # 5. Protection Component (10%)
+    protection_score = 100
+    if soft_protection_active:
+        protection_score = 30 # Dropped further to hit 82-90 target
+    
+    # --- CROSS-COMPONENT REFINEMENT ---
+    # Apply secondary penalties to allow weights to reach target ranges
+    if eog_penalty > 40:
+        agreement_score *= 0.82
+        consistency_score *= 0.82
+        
+    if soft_protection_active:
+        consistency_score *= 0.82
+    
+    # --- WEIGHTED TOTAL ---
+    final_score = (
+        0.30 * coverage_score +
+        0.25 * agreement_score +
+        0.20 * consistency_score +
+        0.15 * context_score +
+        0.10 * protection_score
+    )
+    
+    # --- HARD CAPS & REALISM CEILINGS ---
+    if active_eeg < 2:
+        final_score = min(45, final_score)
+    elif active_eeg < 4:
+        final_score = min(65, final_score)
+    else:
+        # User refinement: Consistently bad EEG should cap at 96% confidence
+        if eeg_quality_score < 20:
+            final_score = min(96, final_score)
+        
+        # Realistic Ceiling for all other cases
+        final_score = min(98, final_score)
+        
+    final_score = np.clip(final_score, 0, 100)
+    
+    # Interpretation
+    level = "very low"
+    if final_score >= 90: level = "very high"
+    elif final_score >= 75: level = "high"
+    elif final_score >= 60: level = "moderate"
+    elif final_score >= 40: level = "low"
+    
+    # Generate Reasons
+    reasons = []
+    if active_eeg == expected_eeg: reasons.append("Full EEG channel coverage")
+    elif active_eeg > 0: reasons.append(f"Limited EEG coverage ({active_eeg}/{expected_eeg} channels)")
+    
+    if agreement_score > 85: reasons.append("Strong cross-channel agreement")
+    elif agreement_score < 60: reasons.append("Significant channel disagreement")
+    
+    if eog_penalty > 40: reasons.append("Heavy EOG artifact burden")
+    if soft_protection_active: reasons.append("Score depends on soft-protection logic")
+    if active_eeg < 2: reasons.append("Critical coverage cap applied")
+
+    return {
+        "confidence_score": int(final_score),
+        "confidence_level": level,
+        "active_eeg_channels": active_eeg,
+        "expected_eeg_channels": expected_eeg,
+        "coverage_capped": (active_eeg < 4),
+        "components": {
+            "coverage": int(coverage_score),
+            "agreement": int(agreement_score),
+            "consistency": int(consistency_score),
+            "context": int(context_score),
+            "protection": int(protection_score)
+        },
+        "reasons": reasons[:3] # Top 3 reasons
+    }
 
 def compute_segment_quality(data_uv: np.ndarray, channels: list, sfreq: float, context: str = "awake"):
     """
@@ -303,10 +463,32 @@ def compute_segment_quality(data_uv: np.ndarray, channels: list, sfreq: float, c
         "eeg_score_final": eeg_q,
         "soft_protection_active": soft_protection_count > 0
     }
+    
+    metrics_summary = {
+        "global_noise_idx": float(global_noise_idx),
+        "median_variance": float(median_var),
+        "mad": float(mad)
+    }
+    
+    # --- 6. CONFIDENCE SCORING ---
+    confidence = compute_confidence_score(
+        results=results,
+        eeg_channels=eeg_channels_list,
+        eog_channels=eog_channels_list,
+        aux_channels=aux_excluded_list,
+        eeg_quality_score=eeg_q,
+        completeness=completeness,
+        soft_protection_active=(soft_protection_count > 0),
+        metrics_summary=metrics_summary
+    )
 
     return {
         "overall_quality_score": eeg_q,
         "eeg_quality_score": eeg_q,
+        "confidence_score": confidence["confidence_score"],
+        "confidence_level": confidence["confidence_level"],
+        "confidence_reasons": confidence["reasons"],
+        "confidence_details": confidence,
         "global_recording_score": global_q,
         "recording_completeness": completeness,
         "recording_context": context,
@@ -314,9 +496,5 @@ def compute_segment_quality(data_uv: np.ndarray, channels: list, sfreq: float, c
         "warnings": clinical_warnings,
         "recording_warnings": recording_setup_warnings,
         "debug_isolation_check": debug_isolation,
-        "metrics_summary": {
-            "global_noise_idx": float(global_noise_idx),
-            "median_variance": float(median_var),
-            "mad": float(mad)
-        }
+        "metrics_summary": metrics_summary
     }

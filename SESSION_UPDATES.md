@@ -1,6 +1,6 @@
-# NeuroVynx Session Update: Channel-Aware Clinical Quality Architecture
+# NeuroVynx Session Update: Channel-Aware Reference-Informed Quality Architecture
 
-This update marks a major architectural transition of NeuroVynx from a generic signal validation tool to a **context-aware, clinically interpretable EEG quality engine**.
+This update marks a major architectural transition of NeuroVynx from a generic signal validation tool to a **context-aware, reference-informed EEG quality engine**.
 
 ---
 
@@ -15,7 +15,7 @@ This update marks a major architectural transition of NeuroVynx from a generic s
 
 - **Soft Protection Algorithm**  
   A non-linear scoring adjustment is applied to physiologically valid EEG segments.  
-  In the absence of fatal failures (e.g., clipping or flatline), penalties from minor noise (e.g., blinks, low-level spectral variation) are reduced by ~40%, ensuring realistic EEG segments score within a **clinical range of ~88–95%**.
+  In the absence of fatal failures (e.g., clipping or flatline), penalties from minor noise (e.g., blinks, low-level spectral variation) are reduced by ~40%, ensuring realistic EEG segments score within an **expected high-quality EEG range (~88–95%)**.
 
 - **Explicit Fatal Condition Detection**  
   Critical failure states are now explicitly defined:
@@ -47,7 +47,7 @@ This update marks a major architectural transition of NeuroVynx from a generic s
 
 ---
 
-## 3. UI/UX Clinical Hierarchy (`frontend/`)
+## 3. UI/UX Hierarchy Evolution (`frontend/`)
 
 - **Tiered Quality Dashboard**  
   Replaced the single-score UI with three interpretable metrics:
@@ -55,12 +55,12 @@ This update marks a major architectural transition of NeuroVynx from a generic s
   - **Global Signal Score** (active channels only)
   - **Sensor Completeness** (recording setup integrity)
 
-- **Clinical Visual Severity Ladder**
+- **Signal Integrity Visual Hierarchy**
   - **EEG (Primary)** → Red (critical signal failure)
   - **EOG (Contextual)** → Amber (physiological or ocular noise)
   - **Auxiliary Sensors** → Muted Gray (inactive or non-critical)
 
-  This enforces a clear separation between diagnostic failure and contextual noise.
+  This enforces a clear separation between signal failure and contextual noise.
 
 - **Dynamic Context Selector**  
   A global UI control allows switching between:
@@ -72,24 +72,57 @@ This update marks a major architectural transition of NeuroVynx from a generic s
 
 ## 4. System Integrity & Developer Readiness
 
-- Consolidated into the unified `NeuroVynx_GitHub` repository
-- Added comprehensive inline documentation and docstrings
-- Fixed JSX structural issues for stable frontend rendering
-- Ensured consistent canvas rendering (DPI scaling, state resets)
+- Consolidated into the unified `NeuroVynx_GitHub` repository.
+- Added comprehensive inline documentation and docstrings.
+- Resolved structural JSX regressions in the frontend for stable rendering.
+- Standardized coordinate-based canvas rendering for diverging topomaps.
 
 ---
 
-## Summary
+## 5. Normative Comparison Layer (Phases 3A & 3B)
 
-This update establishes NeuroVynx as a:
+- **Trust-Aware Z-Score Engine (`normative.py`)**  
+  Implemented mathematically genuine Z-score calculations [Z = (observed - mean) / std] against normative reference groups. The engine enforces a **trust gate** that strictly withholds comparative analysis from low-quality EEG segments.
 
-→ **Channel-aware** system (signal-type separation)  
-→ **Context-aware** system (awake vs sleep physiology)  
-→ **Interpretability-first** system (transparent scoring logic)  
-→ **Clinically aligned** signal quality engine  
+- **Normative Deviation Topography (`topography.py`)**  
+  Built a zero-centered spatial interpolation engine that visualizes scalp-level deviations relative to the selected reference group. Unlike power maps, these maps use a **Diverging Blue-White-Red scale** where:
+  - **Zero (White)** = Within expected reference range (near mean).
+  - **Red** = Elevated relative to reference.
+  - **Blue** = Reduced relative to reference.
 
-The platform now correctly prioritizes **brain signal integrity over auxiliary sensor noise**, enabling reliable analysis of real-world EEG data.
+- **Geometric Masking & Alpha Decoupling (`BrainTopomap.tsx`)**  
+  Resolved a rendering bug where near-zero or negative Z-scores appeared transparent. Decoupled alpha transparency from value magnitude by implementing a **circular geometric scalp mask**, ensuring mathematical fidelity across all frequency bands.
+
+- **Reference-Based Terminology**  
+  Standardized wording throughout the platform to prioritize safety:
+  - Used descriptive "relative to reference" phrasing for value deviations.
+  - Integrated mandatory comparative disclaimers in the UI and API response.
 
 ---
 
-*NeuroVynx Analytics — Clinical Signal Intelligence Engine*
+## 6. Build Health & Structural Restoration
+
+- **Atomic JSX Reconstruction (`SessionViewer.tsx`)**  
+  Restored the frontend to a stable state after structural regressions caused by mismatched tags and tertiary branches. The entire analytical sidebar—including Temporal, Spatial, and Normative modules—is now correctly nested, balanced, and build-ready.
+
+- **Syntactic Sanitization**  
+  Purged all corrupted artifacts (`3">`, malformed headers, and truncated divs) introduced during Phase 3B. Resolved persistent linting warnings to ensure a professional, production-grade repository for public GitHub hosting.
+
+- **Component Hierarchy Audit**  
+  Verified the sidebar layout to ensure that high-density qEEG metrics are logically stacked and remain responsive, prioritizing signal quality trust-meters at the top of the hierarchy.
+
+---
+
+## Final Project Status
+
+With this update, NeuroVynx has successfully achieved:
+
+1.  **Phase 3A Normative Logic** (Mathematics & Reference Groups)
+2.  **Phase 3B Normative Visualization** (Signed Z-Score Topomaps)
+3.  **Frontend Stability** (Balanced JSX & Clean Build)
+
+The platform is now **stable and fully functional within its current comparative qEEG scope**, establishing a robust foundation for spatial normative neuro-analytics.
+
+---
+
+*NeuroVynx — EEG Intelligence and Comparative Analytics Platform — Current Stable Build*

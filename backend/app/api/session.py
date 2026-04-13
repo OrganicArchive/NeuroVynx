@@ -187,6 +187,8 @@ def get_session_analysis(
     apply_notch: bool = Query(False),
     apply_bandpass: bool = Query(False),
     context: str = Query("awake"),
+    age: Optional[int] = Query(None),
+    age_band: Optional[str] = Query(None),
     db: DBSession = Depends(get_db)
 ):
     """
@@ -205,7 +207,9 @@ def get_session_analysis(
             include_quality=True,
             include_features=True,
             include_baseline=True,
-            context=context
+            context=context,
+            age=age,
+            age_band=age_band
         )
     except HTTPException:
         raise
