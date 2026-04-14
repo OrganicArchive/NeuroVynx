@@ -40,4 +40,67 @@
   - [x] Final Production Push to GitHub (v0.1.1)
 
 ---
-*Status: All Phases Complete. Framework Released.*
+
+## 🚀 Future trajectory
+
+- [ ] **Phase 9: Interpretive Intelligence Layer**
+  - [ ] Confidence scoring system
+  - [ ] Rule-based interpretation engine
+  - [ ] Pattern detection (asymmetry, focal vs diffuse)
+  - [ ] Natural language summaries
+
+- [ ] **Phase 10: Advanced Pattern Library**
+  - [ ] Library of patterns (Alpha dominance, Beta excess)
+  - [ ] Detection logic & confidence weighting
+  - [ ] Pattern-based interpretation phrasing
+
+- [ ] **Phase 11: Statistical & Normative Expansion**
+  - [ ] Multi-dataset support
+  - [ ] Age-banded & condition-banded references
+  - [ ] Percentiles and outlier handling
+
+- [ ] **Phase 12: Report Generation Engine**
+  - [ ] Structured PDF/JSON report generator
+  - [ ] Signal quality and spectral summaries
+  - [ ] Narrative interpretation export
+
+- [ ] **Phase 13: Validation & Benchmarking**
+  - [ ] Standardized test datasets (clean vs noisy)
+  - [ ] Comparison benchmarks (expected vs detected)
+  - [ ] Stability and reproducibility metrics
+
+- [ ] **Phase 14: Performance & Scalability Layer**
+  - [ ] Parallel processing (NumPy optimization)
+  - [ ] Async tasks and memory efficiency
+  - [ ] Batch processing support
+
+- [ ] **Phase 15: Machine Learning Layer (Explainable AI)**
+  - [ ] Artifact classification models
+  - [ ] Pattern clustering & anomaly detection
+  - [ ] Maintain secondary/explainable status
+
+- [ ] **Phase 16: Multi-Modal Integration**
+  - [ ] ECG/Behavioral marker integration
+  - [ ] Event-based EEG tagging
+
+- [ ] **Phase 17: Research Mode & Experimentation**
+  - [ ] Parameter tuning interface
+  - [ ] Experiment configuration system
+  - [ ] Reproducibility logging
+
+- [ ] **Phase 18: Trust, Ethics & Clinical Safety**
+  - [ ] Explicit non-diagnostic safeguards
+  - [ ] Confidence-based interpretation gating
+  - [ ] Advanced ethical disclaimers
+
+- [ ] **Phase 19: Plugin / Extension Architecture**
+  - [ ] Modular metrics/visualizations plugin system
+  - [ ] Dynamic dataset ingestion
+
+- [ ] **Phase 20: Final Elite Polish**
+  - [ ] High-fidelity architecture diagrams
+  - [ ] Demo datasets & case-based walkthroughs
+  - [ ] Public showcase scenarios
+
+---
+*Status: Initial Framework Complete. Long-term Roadmap established.*
