@@ -1,0 +1,33 @@
+cff-version: 1.2.0
+type: software
+message: "If you use this software, please cite it as below."
+authors:
+- family-names: "Bakker"
+  given-names: "Kai"
+title: "NeuroVynx: Trust-aware EEG and comparative qEEG research framework"
+version: 0.1.0
+date-released: 2026-04-11
+url: "https://github.com/OrganicArchive/NeuroVynx"
+repository-code: "https://github.com/OrganicArchive/NeuroVynx"
+abstract: >-
+  NeuroVynx is a research-focused EEG and qEEG analysis framework designed for 
+  trust-aware signal evaluation, quantitative metrics, spatial topography, and 
+  reference-based comparison. The framework emphasizes non-diagnostic, 
+  reproducible analysis workflows with strict interpretive boundaries.
+keywords:
+  - EEG
+  - qEEG
+  - signal processing
+  - research framework
+  - neuro-analytics
+license: MIT
+
+preferred-citation:
+  type: software
+  authors:
+  - family-names: "Bakker"
+    given-names: "Kai"
+  title: "NeuroVynx: Trust-aware EEG and comparative qEEG research framework"
+  version: 0.1.0
+  date-released: 2026-04-11
+  url: "https://github.com/OrganicArchive/NeuroVynx"
