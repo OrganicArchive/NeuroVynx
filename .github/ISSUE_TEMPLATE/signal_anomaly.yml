@@ -1,0 +1,77 @@
+name: Signal Interpretation Anomaly
+description: Report unexpected or anomalous engine outputs (e.g. incorrect topography or trust scores)
+title: "[ANOMALY]: "
+labels: ["signal-anomaly"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template when the NeuroVynx engine produces results that seem scientifically incorrect or anomalous given the input signal.
+  - type: dropdown
+    id: dataset_type
+    attributes:
+      label: Dataset Type
+      options:
+        - Real EEG
+        - Synthetic EEG
+    validations:
+      required: true
+  - type: textarea
+    id: expected_interpretation
+    attributes:
+      label: Expected Interpretation
+      description: What output or visualization did you expect based on the input signal?
+    validations:
+      required: true
+  - type: textarea
+    id: observed_interpretation
+    attributes:
+      label: Observed Interpretation
+      description: What did the NeuroVynx engine actually produce?
+    validations:
+      required: true
+  - type: input
+    id: affected_channels
+    attributes:
+      label: Affected Channels / Regions
+      placeholder: e.g. Fp1, Fp2, Frontal region
+    validations:
+      required: true
+  - type: dropdown
+    id: artifact_present
+    attributes:
+      label: Signal Artifacts Present?
+      description: Were there known artifacts (e.g. blinks, muscle noise) in the analyzed segment?
+      options:
+        - Yes (Detected by engine)
+        - Yes (Missed by engine)
+        - No (Clean signal)
+        - Unsure
+    validations:
+      required: true
+  - type: dropdown
+    id: anomaly_type
+    attributes:
+      label: Anomaly Type
+      options:
+        - Topography issue (Scalp mapping)
+        - Interpretation issue (Z-scores / Metrics)
+        - Quality-engine issue (Incorrect trust scoring)
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: reproducible
+    attributes:
+      label: Is it reproducible?
+      options:
+        - Yes (Always happens with this file)
+        - Intermittent
+        - No (One-off event)
+    validations:
+      required: true
+  - type: textarea
+    id: attachments
+    attributes:
+      label: Attachments / Screenshots / Files
+      description: Provide screenshots or, if possible, a small snippet of the offending EEG data (JSON/EDF).

@@ -1,0 +1,51 @@
+name: Research Feedback
+description: Provide academic or methodological feedback on NeuroVynx
+title: "[RESEARCH]: "
+labels: ["research"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Academic and methodological feedback is highly valued. Use this template to suggest improvements to our signal processing, normative models, or interpretive logic.
+  - type: dropdown
+    id: topic_area
+    attributes:
+      label: Topic Area
+      options:
+        - Methodology
+        - Normative Data
+        - Interpretation Logic
+        - Usability
+        - Validation
+        - Documentation
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: Feedback Summary
+      description: Provide a concise summary of your feedback or suggestion.
+    validations:
+      required: true
+  - type: textarea
+    id: rationale
+    attributes:
+      label: Rationale
+      description: Explain the academic or practical reasoning behind your feedback.
+    validations:
+      required: true
+  - type: dropdown
+    id: evidence_type
+    attributes:
+      label: Evidence Type
+      options:
+        - Literature-based
+        - Practical experience
+        - Exploratory suggestion
+    validations:
+      required: true
+  - type: textarea
+    id: references
+    attributes:
+      label: References
+      description: (Optional) Cite any relevant papers or datasets.

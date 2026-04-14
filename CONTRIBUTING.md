@@ -9,7 +9,7 @@ NeuroVynx is a **trust-aware research framework**. All contributions are expecte
 1.  **Trust Before Interpretation**: Features should prioritize signal quality and trust evaluation over increasing metric count.
 2.  **Non-Diagnostic Framing**: Avoid clinical, pathological, or diagnostic terminology. Use reference-based and descriptive language (e.g., "elevated relative to reference").
 3.  **Modularity**: Keep the architecture decoupled. Backend logic should remain independent of frontend visualization where possible.
-4.  **Transparency**: All DSP logic should be well-documented and mathematically transparent and verifiable.
+4.  **Transparency**: All DSP logic should be well documented, mathematically transparent, and verifiable.
 
 ## Code Standards
 
@@ -36,10 +36,16 @@ All contributions are subject to review for:
 
 ## Contribution Workflow
 
-1. **Open an Issue**: Discuss your proposed change to ensure it aligns with the project scope.
-2. **Fork & Branch**: Create a feature branch from `main`.
-3. **Implement & Test**: Ensure your changes do not break existing quality engines or pipelines.
-4. **Submit a PR**: Provide a clear description of the change and its impact on the framework's research utility.
+1. **Open an Issue**: Always discuss your proposed change in an issue first to ensure it aligns with the project scope and research philosophy.
+2. **Branch Naming**: Recommended branch naming conventions:
+   - `feat/`: New features or analysis modules
+   - `fix/`: Bug fixes
+   - `research/`: Refinements to DSP/qEEG logic or normative data
+   - `docs/`: Documentation improvements
+   - `chore/`: Maintenance tasks
+3. **Fork & Branch**: Fork the repository (if external contributor) and create a branch from `main`.
+4. **Implement & Verify**: Ensure your changes do not break existing quality engines or pipelines. Contributions affecting analysis logic should include brief verification notes or expected outcome descriptions in the PR.
+5. **Submit a Pull Request**: Provide a clear description using our PR template. All contributions must preserve NeuroVynx’s research-oriented, non-diagnostic positioning.
 
 ## Critical Proactive Safety Rules
 
@@ -52,4 +58,4 @@ All contributions are subject to review for:
 NeuroVynx is a research-focused EEG/qEEG framework and is not intended for clinical or diagnostic use. Contributions should not attempt to extend the system into validated medical or diagnostic domains.
 
 ---
-*Questions? Open an issue or contact Kai Bakker : https://www.linkedin.com/in/kai-bakker-224746387/.*
+*Questions? Open an issue or connect with the maintainer on LinkedIn: https://www.linkedin.com/in/kai-bakker-224746387/.*

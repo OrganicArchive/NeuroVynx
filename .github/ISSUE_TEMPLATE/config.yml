@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 Documentation
+    url: https://github.com/OrganicArchive/NeuroVynx/tree/main/docs
+    about: Read the comprehensive project documentation and safety guidelines.
+  - name: 🛡️ Security Reporting
+    url: https://github.com/OrganicArchive/NeuroVynx/security/advisories/new
+    about: Report security vulnerabilities privately.
+  - name: 📂 Repository README
+    url: https://github.com/OrganicArchive/NeuroVynx#readme
+    about: Overview of features, installation, and citing.
