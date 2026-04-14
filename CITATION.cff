@@ -5,9 +5,10 @@ authors:
 - family-names: "Bakker"
   given-names: "Kai"
 title: "NeuroVynx: Trust-aware EEG and comparative qEEG research framework"
-version: 0.1.0
+version: 0.1.1
 date-released: 2026-04-11
-url: "https://github.com/OrganicArchive/NeuroVynx"
+doi: 10.5281/zenodo.19563589
+url: "https://doi.org/10.5281/zenodo.19563589"
 repository-code: "https://github.com/OrganicArchive/NeuroVynx"
 abstract: >-
   NeuroVynx is a research-focused EEG and qEEG analysis framework designed for 
@@ -28,6 +29,7 @@ preferred-citation:
   - family-names: "Bakker"
     given-names: "Kai"
   title: "NeuroVynx: Trust-aware EEG and comparative qEEG research framework"
-  version: 0.1.0
+  version: 0.1.1
   date-released: 2026-04-11
-  url: "https://github.com/OrganicArchive/NeuroVynx"
+  doi: 10.5281/zenodo.19563589
+  url: "https://doi.org/10.5281/zenodo.19563589"

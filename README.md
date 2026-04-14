@@ -1,6 +1,6 @@
-# NeuroVynx
-
 ### Trust-aware EEG and comparative qEEG research framework
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.19563589.svg)](https://doi.org/10.5281/zenodo.19563589)
 
 NeuroVynx is a research-focused EEG and qEEG analysis framework designed for transparent, trust-aware interpretation. It integrates signal quality analysis, quantitative metrics, spatial topography, and reference-based comparison into a modular end-to-end pipeline. Built for researchers and developers, NeuroVynx emphasizes strict interpretive boundaries and non-diagnostic reporting, ensuring that all downstream analysis and interpretation are gated by signal integrity.
 
@@ -80,7 +80,7 @@ make dev
 If you use NeuroVynx in research, teaching, or derivative work, please cite or acknowledge the repository:
 
 **Bakker, K. (2026). NeuroVynx: Trust-aware EEG and comparative qEEG research framework.**  
-Available at: https://github.com/OrganicArchive/NeuroVynx
+Available at: https://doi.org/10.5281/zenodo.19563589
 
 ---
 *Built by Kai Bakker*
