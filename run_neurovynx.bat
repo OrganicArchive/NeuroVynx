@@ -104,7 +104,7 @@ start "NeuroVynx Frontend" cmd /k "cd /d "%~dp0frontend" && npm run dev"
 :: 10. Open Browser
 echo [BROWSER] Waiting for servers to initialize...
 timeout /t 5 /nobreak > nul
-start http://localhost:8000
+start http://localhost:5173
 
 echo.
 echo [SUCCESS] Both servers are booting in separate windows.
@@ -177,3 +177,4 @@ if /i "!do_node!"=="y" (
     echo [ERROR] Node.js is required. Setup aborted.
     pause & exit /b
 )
+

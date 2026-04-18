@@ -104,20 +104,46 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from fastapi.responses import HTMLResponse
+
+@app.get("/", tags=["General"], response_class=HTMLResponse)
+def root():
+    return """
+    <html>
+        <head>
+            <title>NeuroVynx API</title>
+            <style>
+                body { font-family: 'Inter', sans-serif; background: #0f172a; color: white; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; margin: 0; }
+                .card { background: #1e293b; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); text-align: center; border: 1px solid #334155; }
+                h1 { color: #38bdf8; margin-bottom: 0.5rem; }
+                p { color: #94a3b8; margin-bottom: 2rem; }
+                .btn { background: #38bdf8; color: #0f172a; padding: 0.75rem 1.5rem; border-radius: 0.5rem; text-decoration: none; font-weight: bold; transition: opacity 0.2s; }
+                .btn:hover { opacity: 0.9; }
+                .links { margin-top: 2rem; display: flex; gap: 1rem; font-size: 0.875rem; }
+                .links a { color: #64748b; text-decoration: none; }
+                .links a:hover { color: #38bdf8; }
+            </style>
+        </head>
+        <body>
+            <div class="card">
+                <h1>NeuroVynx Backend Active</h1>
+                <p>The Analysis Engine is running successfully on Port 8000.</p>
+                <a href="http://localhost:5173" class="btn">Go to Dashboard UI (Port 5173)</a>
+                <div class="links">
+                    <a href="/docs">API Documentation</a>
+                    <span>&bull;</span>
+                    <a href="/health">Health Status</a>
+                </div>
+            </div>
+        </body>
+    </html>
+    """
+
 from app.api import upload, session, baseline, artifact, plugins
 from app.plugins.loader import init_plugin_system
 
 # Initialize Plugin System
 init_plugin_system()
-
-@app.get("/", tags=["General"])
-def root():
-    return {
-        "message": f"Welcome to the {settings.PROJECT_NAME} API",
-        "documentation": "/docs",
-        "health": "/health",
-        "version": "1.0.0"
-    }
 
 @app.get("/health", tags=["Health"])
 def health_check():
