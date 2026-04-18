@@ -1,0 +1,97 @@
+name: Bug Report
+description: File a bug report to help us improve NeuroVynx
+title: "[BUG]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please provide as much information as possible to help us reproduce the issue.
+  - type: textarea
+    id: summary
+    attributes:
+      label: Summary
+      description: A concise description of the bug.
+    validations:
+      required: true
+  - type: dropdown
+    id: category
+    attributes:
+      label: Issue Category
+      description: Which part of the system is affected?
+      options:
+        - Visual (UI/Topography)
+        - Analytics (DSP/qEEG engine)
+        - Performance (Lag/Memory)
+        - Import/Export (File handling)
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: environment_os
+    attributes:
+      label: Operating System
+      placeholder: e.g. Windows 11, macOS Sonoma, Ubuntu 22.04
+    validations:
+      required: true
+  - type: input
+    id: environment_python
+    attributes:
+      label: Python Version
+      placeholder: e.g. 3.10.12
+    validations:
+      required: true
+  - type: input
+    id: environment_browser
+    attributes:
+      label: Browser / Electron Version
+      description: If this is a frontend issue, specify the browser (if running in web mode) or Electron version.
+      placeholder: e.g. Chrome 123, Electron 28
+  - type: dropdown
+    id: dataset_type
+    attributes:
+      label: Dataset Type
+      options:
+        - Real EEG
+        - Synthetic EEG
+        - Demo / Sample Dataset
+    validations:
+      required: true
+  - type: input
+    id: file_format
+    attributes:
+      label: File Format
+      placeholder: e.g. .edf, .bdf, .json
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Clear steps to reproduce the behavior.
+      placeholder: |
+        1. Open NeuroVynx
+        2. Upload file '...'
+        3. Navigate to '...'
+        4. See error
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What did you expect to happen?
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened?
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Screenshots / Logs
+      description: Attach screenshots, copy-paste logs, or provide any other relevant diagnostic info.
