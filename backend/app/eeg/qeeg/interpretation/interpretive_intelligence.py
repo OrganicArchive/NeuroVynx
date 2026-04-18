@@ -5,7 +5,7 @@ The central brain of the NeuroVynx analytic engine. Synthesizes
 multi-layer evidence into coherent, explainable research findings.
 """
 
-from typing import List, Dict, Optional, Any
+from typing import List, Dict, Optional, Any, Tuple
 from .models import FindingResult, PatternResult, ConfidenceResult, InterpretationResult, InterpretationMetadata
 from .explainability import (
     select_language_level, 
