@@ -35,57 +35,49 @@ except Exception:
 # Create the database tables
 Base.metadata.create_all(bind=engine)
 
-def seed_heuristic_artifacts(db: DBSession):
+def seed_core_knowledge(db: DBSession):
     """
-    Injects conservative heuristic templates for Blink and Motion 
-    if the library is empty.
+    Injects sanitized core knowledge (artifacts/baselines) from the seed file.
+    Only runs if the database is currently empty.
     """
     from app.models.artifact import ArtifactBaseline
+    import json
+    import os
     
-    count = db.query(ArtifactBaseline).count()
-    if count == 0:
-        print("[SEED] Injecting default heuristic artifact templates...")
+    # Check if we've already seeded
+    if db.query(ArtifactBaseline).count() > 0:
+        return
+
+    seed_path = os.path.join(os.path.dirname(__file__), "seeds", "core_knowledge.json")
+    if not os.path.exists(seed_path):
+        print(f"[SEED] Warning: Seed file not found at {seed_path}")
+        return
+
+    try:
+        with open(seed_path, "r") as f:
+            data = json.load(f)
+            
+        print(f"[SEED] Ingesting {len(data.get('artifact_baselines', []))} artifact templates...")
+        for art in data.get("artifact_baselines", []):
+            baseline = ArtifactBaseline(
+                artifact_label=art["artifact_label"],
+                source_type=art["source_type"],
+                features=art["features"],
+                meta_data=art["meta_data"]
+            )
+            db.add(baseline)
         
-        # 1. BLINK HEURISTIC
-        blink = ArtifactBaseline(
-            artifact_label="blink",
-            source_type="heuristic",
-            features={
-                "global_summary": {
-                    "frontal_posterior_delta_ratio": 5.0, # Characteristic frontal delta elevation
-                    "mean_relative_delta": 0.6
-                },
-                "per_channel": {
-                    "Fp1": {"relative_delta": 0.8, "max_slope": 100.0},
-                    "Fp2": {"relative_delta": 0.8, "max_slope": 100.0}
-                }
-            },
-            meta_data={"notes": "Heuristic template inspired by common EOG blink characteristics: frontal delta emphasis + sharp steep slope."}
-        )
-        
-        # 2. GROSS MOTION HEURISTIC
-        motion = ArtifactBaseline(
-            artifact_label="motion",
-            source_type="heuristic",
-            features={
-                "global_summary": {
-                    "mean_variance": 5000.0,
-                    "left_right_total_asymmetry": 0.4,
-                    "mean_relative_delta": 0.4
-                }
-            },
-            meta_data={"notes": "Heuristic template for Gross Motion: Detects widespread, high-amplitude, multi-channel instability consistent with body or electrode movement."}
-        )
-        
-        db.add(blink)
-        db.add(motion)
         db.commit()
+        print("[SEED] Knowledge migration successful.")
+    except Exception as e:
+        db.rollback()
+        print(f"[SEED] Error during migration: {e}")
 
 # Run seed on boot
 from app.core.database import SessionLocal
 db = SessionLocal()
 try:
-    seed_heuristic_artifacts(db)
+    seed_core_knowledge(db)
 finally:
     db.close()
 

@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 import numpy as np
 from app.eeg.features import spectral
 from app.eeg.config.analysis_standards import (
@@ -110,4 +110,5 @@ def extract_features(data_uv: np.ndarray, sfreq: float, channels: list):
         "per_channel": per_channel,
         "global_summary": global_summary
     }
+
 

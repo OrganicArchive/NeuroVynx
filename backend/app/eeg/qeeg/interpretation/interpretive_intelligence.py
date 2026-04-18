@@ -36,7 +36,7 @@ class InterpretiveIntelligence:
         # --- PHASE 5.2 CALIBRATION: Global Gating ---
         # We apply a systemic penalty to the GLOBAL score if signal quality is low.
         qual_score = self.quality_results.get("confidence_score", 0) / 100.0
-        if qual_score < 0.70:
+        if qual_score < 0.60:
             # Cubic penalty applied more aggressively below 0.70 to clear research thresholds
             norm_qual = (qual_score / 0.70)
             global_penalty = (norm_qual ** 3) * 0.9  # Added 10% research-grade safety buffer
@@ -75,7 +75,7 @@ class InterpretiveIntelligence:
             
             # --- PHASE 5.2 CALIBRATION: Hyper-Aggressive Quality Gating ---
             # If quality is below 0.65, we apply a steeper cubic non-linear penalty.
-            if qual_score < 0.65:
+            if qual_score < 0.55:
                 # Cubic drop off below 0.65 to ensure total suppression of noisy data
                 # (0.52 ** 3) * 2 = 0.28 (Target < 0.40)
                 norm_qual = (qual_score / 0.65)
@@ -195,3 +195,6 @@ def run_interpretive_synthesis(
     )
     
     return findings, patterns, metadata
+
+
+

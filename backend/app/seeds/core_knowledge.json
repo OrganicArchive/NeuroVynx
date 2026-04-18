@@ -1,0 +1,47 @@
+{
+  "metadata": {
+    "version": "1.0.1",
+    "description": "Sanitized Core Knowledge Seed for NeuroVynx",
+    "source": "eeg-platform-sanitized"
+  },
+  "artifact_baselines": [
+    {
+      "artifact_label": "blink",
+      "source_type": "heuristic",
+      "features": {
+        "global_summary": {
+          "frontal_posterior_delta_ratio": 5.0,
+          "mean_relative_delta": 0.6
+        },
+        "per_channel": {
+          "Fp1": {
+            "relative_delta": 0.8,
+            "max_slope": 100.0
+          },
+          "Fp2": {
+            "relative_delta": 0.8,
+            "max_slope": 100.0
+          }
+        }
+      },
+      "meta_data": {
+        "notes": "Heuristic template inspired by common EOG blink characteristics: frontal delta emphasis + sharp steep slope."
+      }
+    },
+    {
+      "artifact_label": "motion",
+      "source_type": "heuristic",
+      "features": {
+        "global_summary": {
+          "mean_variance": 5000.0,
+          "left_right_total_asymmetry": 0.4,
+          "mean_relative_delta": 0.4
+        }
+      },
+      "meta_data": {
+        "notes": "Heuristic template for Gross Motion: Detects widespread, high-amplitude, multi-channel instability consistent with body or electrode movement."
+      }
+    }
+  ],
+  "analytical_baselines": []
+}
