@@ -131,7 +131,7 @@ def root():
     </html>
     """
 
-from app.api import upload, session, baseline, artifact, plugins
+from app.api import upload, session, baseline, artifact, plugins, diagnostic
 from app.plugins.loader import init_plugin_system
 
 # Initialize Plugin System
@@ -150,3 +150,4 @@ app.include_router(session.router, prefix=settings.API_V1_STR + "/sessions", tag
 app.include_router(baseline.router, prefix=settings.API_V1_STR + "/baselines", tags=["Baselines"])
 app.include_router(artifact.router, prefix=settings.API_V1_STR + "/artifacts", tags=["Artifact Library"])
 app.include_router(plugins.router, prefix=settings.API_V1_STR + "/plugins", tags=["Plugins"])
+app.include_router(diagnostic.router, prefix=settings.API_V1_STR + "/diagnostic", tags=["Diagnostic"])
