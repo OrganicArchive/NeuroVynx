@@ -1,3 +1,5 @@
+from typing import List
+import numpy as np
 from app.eeg.features import spectral
 from app.eeg.config.analysis_standards import (
     CANONICAL_BANDS, TOTAL_POWER_RANGE, REGION_MAPPING, 
@@ -30,8 +32,6 @@ def extract_features(data_uv: np.ndarray, sfreq: float, channels: list):
         rel_band_powers[band_name] = bp / (total_power_30 + EPSILON)
         
     # Time-domain features
-    from typing import List
-import numpy as np
     variances = np.var(data_uv, axis=1)
     p2p = np.ptp(data_uv, axis=1)
     rms = np.sqrt(np.mean(np.square(data_uv), axis=1))
