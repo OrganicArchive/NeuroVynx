@@ -340,3 +340,4 @@ def analyze_window(
     except Exception as e:
         # Surface internal errors gracefully with meaningful details
         raise HTTPException(status_code=500, detail=f"Error executing analysis pipeline: {str(e)}")
+
