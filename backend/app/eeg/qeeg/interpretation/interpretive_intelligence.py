@@ -33,10 +33,9 @@ class InterpretiveIntelligence:
         """
         final_findings = []
         
-        # --- PHASE 5.2 CALIBRATION: Global Gating ---
-        # We apply a systemic penalty to the GLOBAL score if signal quality is low.
-        qual_score = self.quality_results.get("confidence_score", 0) / 100.0
+        # [TRACE] Global Quality Context
         if qual_score < 0.60:
+            print(f"[TRACE:INTEL] Applying global quality penalty: {qual_score:.2f} (Penalty applied to all findings)")
             # Cubic penalty applied more aggressively below 0.70 to clear research thresholds
             norm_qual = (qual_score / 0.70)
             global_penalty = (norm_qual ** 3) * 0.9  # Added 10% research-grade safety buffer
@@ -121,7 +120,8 @@ class InterpretiveIntelligence:
             else:
                 cand.priority = "technical_only"
                 
-            # Suppression gating
+            # [TRACE] Finding Synthesis Result
+            print(f"[TRACE:INTEL] Finding: {cand.finding_name} | Conf: {cand.confidence_score:.2f} | Priority: {cand.priority} | Eligible: {cand.eligible}")
             if not cand.eligible or cand.confidence_score < 0.4:
                 cand.suppression_info.is_suppressed = True
                 cand.suppression_info.reasons.append("Confidence below minimum interpretive threshold.")

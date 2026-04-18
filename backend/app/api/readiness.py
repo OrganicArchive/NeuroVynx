@@ -74,3 +74,24 @@ def run_integrity_check(db: DBSession = Depends(get_db)):
         "check": "complete",
         "templates_active": artifact_count
     }
+
+@router.post("/reset-knowledge")
+def reset_core_knowledge(db: DBSession = Depends(get_db)):
+    """
+    WARNING: Clears all artifact templates and re-seeds from the JSON source.
+    Use this to repair a mangled or out-of-sync local database.
+    """
+    try:
+        # Clear existing
+        db.query(ArtifactBaseline).delete()
+        db.commit()
+        
+        # Re-seed
+        from app.main import seed_core_knowledge
+        seed_core_knowledge(db)
+        
+        count = db.query(ArtifactBaseline).count()
+        return {"status": "success", "message": "Knowledge base reset and re-seeded.", "count": count}
+    except Exception as e:
+        db.rollback()
+        return {"status": "error", "message": str(e)}

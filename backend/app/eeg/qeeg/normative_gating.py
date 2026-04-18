@@ -30,6 +30,10 @@ def assess_channel_eligibility(
     # Interpretation eligibility at channel level requires high quality
     is_interpretable = is_eligible and quality_score >= 70 
 
+    # [TRACE] Channel Gating Analysis
+    if not is_interpretable:
+        print(f"[TRACE:GATE] Channel {channel_name} disqualified. Quality: {quality_score:.1f}% (Required: 70%). HasRef: {has_reference}")
+
     return {
         "metric_available": is_available,
         "metric_normative_eligible": is_eligible,
@@ -71,6 +75,10 @@ def assess_regional_eligibility(
             reason = f"Insufficient electrode support (n={trusted_channel_count})"
         else:
             reason = "Low interpretive confidence"
+
+    # [TRACE] Regional Gating Analysis
+    if not is_interpretable and is_available:
+        print(f"[TRACE:GATE] Region {region_name} disqualified. Channels: {trusted_channel_count}, MeanQual: {mean_quality:.1f}%, Confidence: {interpretation_confidence:.1f}%")
 
     return {
         "metric_available": is_available,
