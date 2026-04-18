@@ -1,8 +1,8 @@
 from moviepy import VideoFileClip
 import os
 
-captures_dir = r"[LOCAL_PATH]"
-output_dir = r"[LOCAL_PATH]"
+captures_dir = r"C:\Users\kaiba\Videos\Captures"
+output_dir = r"c:\Users\kaiba\.gemini\antigravity\scratch\neurovynx_github\docs\media"
 
 # Map of manually cropped source files to clean gallery filenames
 video_map = {

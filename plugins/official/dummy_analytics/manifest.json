@@ -1,0 +1,12 @@
+{
+  "plugin_id": "official.dummy_analytics",
+  "name": "Dummy Analytics",
+  "version": "1.0.0",
+  "author": "NeuroVynx Core",
+  "category": "analytics",
+  "trust_tier": "official_experimental",
+  "permissions": ["ui_render"],
+  "entrypoint": "main.py",
+  "plugin_api_version": "1",
+  "description": "A dummy analytics plugin for testing Phase 19 hooks."
+}

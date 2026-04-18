@@ -1,0 +1,12 @@
+{
+  "plugin_id": "official.dummy_viz",
+  "name": "Dummy Viz",
+  "version": "1.0.0",
+  "author": "NeuroVynx Core",
+  "category": "visualization",
+  "trust_tier": "core_certified",
+  "permissions": ["ui_render"],
+  "entrypoint": "main.py",
+  "plugin_api_version": "1",
+  "description": "A dummy visualization plugin for testing Phase 19 hooks."
+}
