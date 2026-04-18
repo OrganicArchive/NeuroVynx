@@ -19,7 +19,7 @@ class ConfidenceResult(BaseModel):
     per_region: Dict[str, float] = Field(default_factory=dict, description="Confidence per region")
     per_metric: Dict[str, float] = Field(default_factory=dict, description="Confidence per qEEG metric")
     reasons: List[str] = Field(default_factory=list, description="Reasons for confidence reduction")
-    trend_traceability: Optional[TrendTraceability] = Field(None, description="Metadata regarding longitudinal comparisons")
+    trend_traceability: Optional["TrendTraceability"] = Field(None, description="Metadata regarding longitudinal comparisons")
 
 class FindingTemporalMetadata(BaseModel):
     """Temporal support details for a specific finding."""
@@ -234,7 +234,7 @@ class InterpretationResult(BaseModel):
     top_patterns: List[str] = Field(default_factory=list, description="Priority labels for UI tags")
     summary: InterpretationSummary
     behavior_flags: List[str] = Field(default_factory=list, description="Overall session-level behavior markers")
-    trend_traceability: Optional[TrendTraceability] = None
+    trend_traceability: Optional["TrendTraceability"] = None
     advisory_ml: Optional[AdvisoryMLSection] = None
     metadata: InterpretationMetadata = Field(default_factory=InterpretationMetadata)
 
