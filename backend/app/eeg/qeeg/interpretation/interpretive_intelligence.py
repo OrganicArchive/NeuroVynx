@@ -34,6 +34,7 @@ class InterpretiveIntelligence:
         final_findings = []
         
         # [TRACE] Global Quality Context
+        qual_score = self.quality_results.get("confidence_score", 0) / 100.0
         if qual_score < 0.60:
             print(f"[TRACE:INTEL] Applying global quality penalty: {qual_score:.2f} (Penalty applied to all findings)")
             # Cubic penalty applied more aggressively below 0.70 to clear research thresholds
