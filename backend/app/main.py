@@ -110,6 +110,15 @@ from app.plugins.loader import init_plugin_system
 # Initialize Plugin System
 init_plugin_system()
 
+@app.get("/", tags=["General"])
+def root():
+    return {
+        "message": f"Welcome to the {settings.PROJECT_NAME} API",
+        "documentation": "/docs",
+        "health": "/health",
+        "version": "1.0.0"
+    }
+
 @app.get("/health", tags=["Health"])
 def health_check():
     return {
