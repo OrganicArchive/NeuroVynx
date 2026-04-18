@@ -1,8 +1,6 @@
 # Real-Time EEG Platform MVP Initialization
 
-Thank you for providing such a comprehensive, well-structured product brief! It perfectly sets the stage for building the MVP. 
 
-Our first step is Phase 0: Discovery and Design. Based on your required Next Documents, I will generate a complete set of technical specifications and design guides to act as our single source of truth before we write any code.
 
 ## Proposed Changes
 
