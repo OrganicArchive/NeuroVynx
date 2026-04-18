@@ -30,7 +30,8 @@ def extract_features(data_uv: np.ndarray, sfreq: float, channels: list):
         rel_band_powers[band_name] = bp / (total_power_30 + EPSILON)
         
     # Time-domain features
-    import numpy as np
+    from typing import List
+import numpy as np
     variances = np.var(data_uv, axis=1)
     p2p = np.ptp(data_uv, axis=1)
     rms = np.sqrt(np.mean(np.square(data_uv), axis=1))
@@ -109,3 +110,4 @@ def extract_features(data_uv: np.ndarray, sfreq: float, channels: list):
         "per_channel": per_channel,
         "global_summary": global_summary
     }
+

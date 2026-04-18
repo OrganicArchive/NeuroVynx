@@ -11,6 +11,7 @@ Performance Metrics:
   quantify spectral noise and oscillation stability.
 """
 
+from typing import List
 import numpy as np
 
 def compute_temporal_qeeg(history, current_qeeg, window_step=10.0):
@@ -166,3 +167,4 @@ def compute_temporal_qeeg(history, current_qeeg, window_step=10.0):
         "summary": summary,
         "warnings": []
     }
+

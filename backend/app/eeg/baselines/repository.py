@@ -1,3 +1,4 @@
+from typing import Dict
 from sqlalchemy.orm import Session as DBSession
 from app.models.baseline import Baseline
 
@@ -39,3 +40,4 @@ def load_baseline(db: DBSession, user_id: str = "default_user", baseline_type: s
         Baseline.user_id == user_id, 
         Baseline.baseline_type == baseline_type
     ).first()
+

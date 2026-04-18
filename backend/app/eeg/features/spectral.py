@@ -11,6 +11,7 @@ Core Method: Welch's Periodogram
   of the spectral estimate, and is highly robust to noise transients.
 """
 
+from typing import Tuple
 import numpy as np
 from scipy import signal
 
@@ -66,3 +67,4 @@ def relative_power(bp: np.ndarray, total_power: np.ndarray):
     """
     # Prevents division-by-zero on flatlined hardware
     return bp / (total_power + 1e-12)
+

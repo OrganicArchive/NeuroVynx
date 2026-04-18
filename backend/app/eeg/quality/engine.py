@@ -14,6 +14,7 @@ Features:
 - Multi-Component Confidence Scoring (Coverage, Agreement, Consistency, Context, Protection)
 """
 
+from typing import Dict, List
 import numpy as np
 import re
 from app.eeg.features import spectral
@@ -498,3 +499,4 @@ def compute_segment_quality(data_uv: np.ndarray, channels: list, sfreq: float, c
         "debug_isolation_check": debug_isolation,
         "metrics_summary": metrics_summary
     }
+

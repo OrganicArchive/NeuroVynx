@@ -7,6 +7,7 @@ All metrics are gated by the Quality/Confidence engine to ensure
 that only reliable data is quantified.
 """
 
+from typing import Dict, List
 import numpy as np
 from app.eeg.features import spectral
 from app.eeg.config.analysis_standards import (
@@ -246,3 +247,4 @@ def compute_qeeg_layer(
     })
 
     return results
+

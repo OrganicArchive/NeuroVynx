@@ -1,5 +1,6 @@
 import mne
 import numpy as np
+from typing import List
 import os
 
 def create_synthetic_signal(
@@ -69,3 +70,4 @@ def generate_benchmark_suite(output_dir: str):
 
 if __name__ == "__main__":
     generate_benchmark_suite("backend/tests/fixtures/validation_cases")
+

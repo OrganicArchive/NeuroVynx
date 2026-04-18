@@ -1,5 +1,5 @@
 import numpy as np
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from .artifact_features import extract_artifact_features
 from .artifact_models import ArtifactClassifier
 from .clustering_engine import SimilarityEngine

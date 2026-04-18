@@ -14,7 +14,7 @@ import os
 import mne
 from fastapi import HTTPException
 from sqlalchemy.orm import Session as DBSession
-from typing import Optional, List
+from typing import Optional, List, Dict
 
 from app.models.session import Session
 from app.eeg.quality.engine import compute_segment_quality

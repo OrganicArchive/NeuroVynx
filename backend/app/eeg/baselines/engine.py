@@ -1,3 +1,4 @@
+from typing import Dict, List, Optional, Any, Any
 from app.eeg.baselines import classifier
 
 def compare_to_baseline(current_features: dict, baseline_features: dict, artifact_baselines: list = None):
@@ -99,3 +100,5 @@ def compare_to_baseline(current_features: dict, baseline_features: dict, artifac
             "comparison_confidence": confidence
         }
     }
+
+
